@@ -10,6 +10,6 @@ aquí:
 El documento con el código para hacer mi trabajo se encuentra en el
 archivo `index.Rmd` del repo. La versión final del trabajo puede
 visualizarse en:
-<a href="https://perezp44.github.io/trabajo_BigData/" class="uri">https://perezp44.github.io/trabajo_BigData/</a>.
+<a href="https://martaoliver.github.io/trabajo_BigData/" class="uri">https://perezp44.github.io/trabajo_BigData/</a>.
 
 El trabajo trata de /consiste en ….
