@@ -1,0 +1,367 @@
+---
+title: "Fútbol femenino"
+subtitle: "Marta Oliver Beltrán(obelmar@alumni.uv.es)" 
+author: "Universitat de València"
+date: "Enero de 2021 (actualizado el `r format(Sys.time(), '%d-%m-%Y')`)"
+output:
+  html_document:
+    #css: "./assets/my_css_file.css"
+    theme: paper
+    highlight: textmate 
+    toc: true
+    toc_depth: 3 
+    toc_float: 
+      collapsed: true
+      smooth_scroll: true
+    self_contained: true
+    number_sections: false
+    df_print: kable
+    code_download: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r packages-setup, include = FALSE}
+library(tidyverse)
+library(klippy) 
+library(knitr)
+library(readxl)
+library(RColorBrewer)
+library(ggplot2)
+library(ggThemeAssist)
+library(reactable)
+library(sf)
+library(plotrix)
+library(kableExtra)
+library(plotly)
+library(gganimate)
+library(dplyr)
+library(hrbrthemes)
+```
+
+```{r chunk-setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE, 
+                      #results = "hold",
+                      cache = FALSE, cache.path = "/caches/", comment = "#>",
+                      #fig.width = 7, #fig.height= 7,   
+                      #out.width = 7, out.height = 7,
+                      collapse = TRUE,  fig.show = "hold",
+                      fig.asp = 7/9, out.width = "60%", fig.align = "center")
+knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo-png"))
+```
+
+```{r options-setup, include = FALSE}
+options(scipen = 999) #- para quitar la notación científica
+options("yaml.eval.expr" = TRUE) 
+```
+
+
+```{r klippy, echo = FALSE}
+klippy::klippy(position = c("top", "right")) #- remotes::install_github("rlesur/klippy")
+```
+
+<hr class="linea-black">
+
+Trabajo elaborado para la asignatura "Programación y manejo de datos en la era del Big Data" de la Universitat de València durante el curso 2020-2021. El repo del trabajo está [aquí](https://github.com/martaoliver/trabajo_BigData){target="_blank"}. La página web de la asignatura y los trabajos de mis compañeros pueden verse [aquí](https://perezp44.github.io/intro-ds-20-21-web/07-trabajos.html){target="_blank"}.
+
+<hr class="linea-red">
+
+# **1. Introducción**
+
+<div style = "text-align: justify">El fútbol femenino es el deporte de equipo más practicado por mujeres en todo el mundo. Este deporte empezó a ser practicado en una sección femenina hace mucho tiempo, a finales del siglo XIX, en Londres pero fue a causa de las distintas guerras y los problemas económicos y sociales de los años siguientes que este deporte dejó de ser practicado.</div/>
+
+<div style = "text-align: justify">Actualmente, hace años que el fútbol femenino dejó de ser un mundo de hombres y las mujeres dieron el paso para practicar este deporte, a pesar de que tienen que seguir aguantando comentarios despectivos y frases como "el fútbol es un deporte de hombres".</div/>
+
+<div style = "text-align: justify">Según los datos oficiales de la FIFA, más o menos 26 millones de mujeres juegan al fútbol en 180 países del mundo. Europa es el continente que ha experimentado un mayor crecimiento en los últimos años donde el número de mujeres que practican este deporte se ha multiplicado por cinco.</div/>
+
+<div style = "text-align: justify">En nuestro país, España, también ha habido un gran progreso y la selección nacional femenina ha estado presente en los últimos años en Mundiales y Eurocopas.</div/>
+
+<div style = "text-align: justify">Poco a poco se está normalizando esta modalidad del fútbol pero todavía faltan muchos aspectos para mejorar como el sueldo de las profesionales, ni comparable con las cifras que se mueven en el fútbol masculino.</div/>
+
+```{r, echo = FALSE, eval = TRUE, out.width = "50%", fig.align = "center", fig.cap="Selección española"}
+knitr::include_graphics(here::here("imagenes", "futfem_españa.jpg") ) 
+```
+
+<div style = "text-align: justify">Debido a la necesidad de dar mayor visibilidad al fútbol femenino y ya que yo también practico este deporte he decidido tratar este tema en el trabajo de la asignatura "Programación y manejo de datos en la era del Big Data".</div/>
+
+<div style = "text-align: justify">La finalidad y objetivo de este análisis es observar el desarrollo a lo largo del tiempo del fútbol femenino en los diferentes países del mundo.</div/>
+
+# **2. Datos**
+
+Los datos que he utilizado para hacer el análisis se encuantran en el siguiente link:
+[Datos](https://www.kaggle.com/martj42/womens-international-football-results)
+
+<div style = "text-align: justify">En estos datos aparecen los partidos de las selecciones de fútbol femenino desde el año 1969 hasta marzo del año 2020, donde pararon los partidos debido a la pandemia por el Coronavirus.</div/>
+
+## **2.1. Procesando los datos**
+
+```{r, include = TRUE, echo=TRUE}
+
+futfem <- read_excel("./Datos/results_futfem.xlsx")
+
+# Con la siguiente función he separado la columna "date" para poder tener los años en una sola columna y mostrar la evolución a lo largo de los años.
+
+date <- futfem %>%  separate(col = date, 
+              into = c("Año", "Mes", "Dia"),
+              sep  = "-")
+
+```
+
+# **3. Análisis de selecciones**
+## **3.1. Evolución del fútbol femenino a lo largo del tiempo**
+
+```{r eval=TRUE, echo=TRUE}
+# A partir de la tabla que ya habia arreglado anteriormente, agrupo los años para saber cuantos partidos se jugaron cada año.
+
+evol <- date %>% group_by(Año)%>% count()
+
+# Hago el gráfico que en este caso es un 'barplot'
+
+ggplot(evol, aes(x=Año, y=n,  col='red')) + 
+  geom_bar(stat = "identity") + theme(legend.position="none") +
+  theme(axis.ticks = element_line(linetype = "blank"), 
+    axis.text = element_text(size = 7), axis.text.y = element_text(size = 15), 
+    panel.background = element_rect(fill = "grey100", 
+        size = 0.6)) +labs(title = "Evolución partidos por año", 
+    x = "Años", y = "Nº Partidos") + theme(axis.text.x = element_text(angle = 90))
+
+
+```
+
+<div style = "text-align: justify">Podemos ver que ha habido un notable crecimiento de los partidos de fútbol femenino a lo largo del tiempo.</div/>
+
+<div style = "text-align: justify">En el año 1969 tan solo se disputaron 4 partidos y en los últimos años ha habido un máximo de 349 partidos oficiales en el mismo año (2018).</div/>
+
+<div style = "text-align: justify">Se puede observar una clara tendencia a que hay tres años seguidos con un número alto de partidos seguido de uno que baja el número notablemente, hasta llegar al año 2014 que se han ido igualando. Esto se debe a que cada año se disputa un torneo diferente según el continente, menos el Mundial y los Juegos Olímpicos que ambos son a nivel mundial.</div/>
+
+<div style = "text-align: justify">Los años que tenían un mayor número de partidos coinciden con los partidos para la clasificación a la Eurocopa,  el Mundial y la clasificación para este, que como veremos más adelante son los torneos oficiales con más partidos disputados.</div/>
+
+```{r eval=TRUE, echo=TRUE, out.width = "50%", fig.align = "center"}
+month <- date %>% group_by(Mes)%>% count()
+
+gr_month <- ggplot (month, aes(x=Mes, y = n), aes(fct_rev(Mes))) + geom_bar(stat="identity", fill = "aquamarine") + coord_flip() + labs(x = "Mes", y = "Número de partidos")+labs(title = "Evolución partidos por mes")
+ggplotly(gr_month)
+```
+
+<div style = "text-align: justify">Con respecto a este gráfico, podemos ver los meses en los que más partidos se disputan. En este caso el mes con más partidos y esto se debe a que muchos partidos de la clasificación a la Eurocopa, el Mundial y la Copa de América se juegan en este mes ya que estos torneos se juegan durante los meses de junio y julio. Además, el torneo amistoso de la Copa de Algarve es el segundo torneo que más partidos tiene disputados y este se juega todos los años en marzo desde el año 1994.</div/>
+
+## **3.2. Torneos**
+
+```{r, echo = FALSE, eval = TRUE, out.width = "50%", fig.align = "center", fig.cap="Mundial de Francia 2019"}
+knitr::include_graphics(here::here("imagenes", "mundial_fem2019.png") ) 
+```
+
+```{r eval=TRUE, echo=TRUE}
+
+tourn <- futfem %>% group_by(tournament)%>% count()
+x <- c(86, 115, 268, 173, 226, 16, 545, 42, 126, 145, 6, 157, 20, 284, 172, 106, 78, 32, 6, 130, 30, 6, 153, 1241)
+lbl <- c("AFC Asian Cup", "AFC Asian Cup qualification", "AFC Championship", "African Championship", "	
+African Championship qualification", "African Cup of Nations", "Algarve Cup", "CONCACAF Championship", "	
+CONCACAF Gold Cup", "CONCACAF Gold Cup qualification", "CONCACAF Invitational Tournament", "Copa América", "Euro", "FIFA World Cup", "FIFA World Cup qualification", "Four Nations Tournament", "OFC Championship", "OFC Nations Cup", "OFC Nations Cup qualification", "Olympic Games", "SheBelieves Cup", "Tournoi de France", "UEFA Euro", "	
+UEFA Euro qualification")
+
+pie3D(x, labels = lbl, explode = 0.1, main = "Torneos", labelcex = 0.5)
+
+
+```
+
+<div style = "text-align: justify">Como ya había mencionado en el apartado anterior y que ahora podemos ver en el gráfico los torneos donde se juegan una mayor cantidad de partidos son las fases de clasificación a la Eurocopa femenina, la Copa de Algarve y el Mundial. Entre estos tres, la Eurocopa y el Mundial son torneos oficiales mientras que la copa de Algarve es un torneo amistoso.</div/>
+
+<div style = "text-align: justify">El último campeón de la copa del mundo fue EEUU en 2019, esta misma selección es la que más veces ha ganado este campeonato, un total de 4 veces.</div/>
+
+<div style = "text-align: justify">Con respecto a la Eurocopa, el último ganador fue Países Bajos en 2017, sin embargo, la selección que más veces ha ganado este torneo es la selección femenina alemana, un total de 8 títulos.</div/>
+
+
+## **3.3. Selecciones que más partidos han jugado en casa y más partidos fuera**{.tabset}
+
+### Partidos jugados en casa
+
+```{r eval=TRUE, echo=TRUE}
+
+selec_home <- futfem %>% group_by(home_team)%>% count()
+selec_home <- selec_home %>% arrange(desc(n))
+
+
+reactable(selec_home, defaultPageSize =  10,  paginationType = "jump", showPageSizeOptions =  TRUE , pageSizeOptions =  c ( 10 , 50 , 100 ),defaultColDef = colDef(
+    align = "center",
+    minWidth = 70,
+    headerStyle = list(background = "cyan"),
+    filterable = TRUE),  highlight = TRUE, outlined = TRUE,
+    columns = list(
+  `Movies&TVShow/año` = colDef(style = function(value) {
+    if (value > 0) {
+      color <- "#e00000"}
+      else {
+      color <- "#008000"
+    }
+    list(color = color, fontWeight = "bold")
+  })))
+
+```
+
+### Partidos jugados fuera
+
+```{r eval=TRUE, echo=TRUE}
+
+selec_away <- futfem %>% group_by(away_team)%>% count()
+selec_away <- selec_away %>% arrange(desc(n))
+
+
+reactable(selec_away, defaultPageSize =  10,  paginationType = "jump", showPageSizeOptions =  TRUE , pageSizeOptions =  c ( 10 , 50 , 100 ),defaultColDef = colDef(
+    align = "center",
+    minWidth = 70,
+    headerStyle = list(background = "cyan"),
+    filterable = TRUE),  highlight = TRUE, outlined = TRUE,
+    columns = list(
+  `Movies&TVShow/año` = colDef(style = function(value) {
+    if (value > 0) {
+      color <- "#e00000"}
+      else {
+      color <- "#008000"
+    }
+    list(color = color, fontWeight = "bold")
+  })))
+
+```
+
+## **3.4. Pais donde más partidos se han jugado**
+
+```{r eval=TRUE, echo=TRUE}
+country <- futfem %>% group_by(country)%>% count() %>% rename(pais = country)
+
+country <- country %>% arrange(desc(n)) %>% rename(partidos = n) 
+
+country %>% DT::datatable(extensions = 'Buttons', 
+               options = list(dom = 'Blfrtip', 
+                              buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                              pageLength = 5, autoWidth = TRUE ))
+  
+```
+
+<div style = "text-align: justify">El país donde más veces se ha jugado un partido es Portugal, un total de 580 partidos ya que ahí se disputa el torneo de Algarve Cup que es uno de los torneos con más partidos jugados ya que se juega todos los años. A este, le siguen China y Estados Unidos que son dos de los países más importantes respecto al fútbol femenino porque suelen estar presentes en todos los torneos y sobre todo EEUU, la selección femenino siempre ha tenido un mayor apoyo por la población en comparación con otros países.</div/>
+
+```{r, echo = TRUE, eval = TRUE}
+
+# Voy a crear un gráfico para poder visualizar mejor los paises. Cogiendo un código de un mapa de una página de internet  y he cambiado los paises y las coordenadas de estos.
+mapa <- map_data("world") %>% mutate(color = case_when(region == "Portugal" ~ 1,
+                                                        region == "China" ~ 2,
+                                                        region == "USA" ~ 3,
+                                                        region == "Sweden" ~ 4,
+                                                        region == "Germany" ~ 5,
+                                                        region == "France" ~ 6,
+                                                        region == "Canada" ~ 7,
+                                                        region == "Italy" ~ 8,
+                                                        region == "Netherlands" ~ 9)) %>% mutate(color = if_else(is.na(color),0,color))
+                                                        
+                                                        
+
+paises <- c("Portugal","China","USA","Sweden","Germany","France","Canada","Italy","Netherlands")
+
+lat <- c(37.17944,19.99194,19.01201,56.29053,53.87075,42.80542,43.93960,36.75703,51.38647)
+long <- c(-7.406153,110.8888,-155.58134,16.52852,14.213672,9.480371,59.78760,12.051270,4.226171)
+
+latlong <- data.frame(paises,lat,long)
+                     
+
+mapa1 <- ggplot() + geom_map(data = mapa, map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "#f7eca1") +
+                    geom_map(data = mapa %>% filter(color==1), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "red") +
+                    geom_map(data = mapa %>% filter(color==2), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "green") +
+                    geom_map(data = mapa %>% filter(color==3), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "cyan") +
+                    geom_map(data = mapa %>% filter(color==4), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "#ab6800") +
+                    geom_map(data = mapa %>% filter(color==5), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "yellow") +
+                    geom_map(data = mapa %>% filter(color==6), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "#004dff") +
+                    geom_map(data = mapa %>% filter(color==7), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "#ff9300") +
+                    geom_map(data = mapa %>% filter(color==8), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "#a4034b") +
+                    geom_map(data = mapa %>% filter(color==9), map = mapa, aes(long, lat, map_id = region), color = "#000000", fill = "#238a00") +
+                    geom_point(data = latlong, aes(x = long,y = lat), size = 2) +
+                    ylim(-55,NA) +
+                    theme(panel.background = element_rect(fill = "#a6fffb") , panel.grid = element_line(colour = "#000000"), axis.title = element_blank(),
+                    axis.text = element_blank(), axis.ticks = element_blank())  
+                    
+mapa1      + theme(panel.background = element_rect(fill = "gray100")) +labs(title = "Países donde más partidos se han jugado")
+
+```
+
+## **3.5. Mundial vs Eurocopa**
+
+```{r, echo = TRUE, eval = TRUE}
+comp <- date %>% group_by(Año) %>% count(tournament) %>% filter(tournament %in% c("FIFA World Cup", "UEFA Euro qualification")) 
+
+ggplot(comp, aes(fill=tournament, y=n, x=Año)) + 
+    geom_bar(position="dodge", stat="identity") + theme(axis.line = element_line(colour = "gray", 
+    linetype = "solid"), axis.text.x = element_text(angle = 90), 
+    panel.background = element_rect(fill = "gray100")) +labs(title = "Mundial vs Eurocopa")
+
+
+```
+
+<div style = "text-align: justify">La Copa Mundial Femenina de la FIFA es el torneo internacional de fútbol femenino a nivel de selecciones nacionales más importante del mundo. Además, existen otras competencias juveniles como la Copa Mundial Femenina de Fútbol Sub-20 y la Copa Mundial Femenina de Fútbol Sub-17, ambas organizadas por la FIFA. La primera edición de este torneo fue en 1991 y a partir de ahí se decidió que se jugaría cada 4 años aunque ha habido años en los que se ha disputado aunque no tocaba. En un principio, este torneo contaba con 16 selecciones y ha ido evolucionando y haciéndose grande hasta que en 2015 subió a 24 y se espera que en el mundial de 2023 se dispute con 32 selecciones.</div/>
+
+<div style = "text-align: justify">El Campeonato de Europa Femenino de la UEFA, comúnmente conocido como Eurocopa Femenina, es la competición internacional futbolística más importante entre selecciones nacionales femeninas de la UEFA. Este torneo comenzó a disputarse en 1969 sin embargo estos años no fue considerado oficial y la primera edición del torneo respaldado por la UEFA fue en 1982.</div/>
+
+## **3.6. Tipo de campo**
+
+```{r, echo = TRUE, eval = TRUE}
+
+neutral <- date %>% group_by(neutral) %>% count() 
+
+datos <- c(2324, 1839)
+
+pie3D(datos, labels = datos, col = 2:3, labelcol = "red", border = "white", main = "Tipo de campo") 
+
+legend(x = "topright", legend = c("False", "True"), fill = c("pink", "green"), 
+       title = "Legend")
+
+```
+
+<div style = "text-align: justify">Con estos datos obtenemos que de 4163 partidos oficiales que se han disputado desde el año 1969, 2324 han sido disputados en campo propio de alguno de los dos paises.</div/>
+
+# **4. Selección española**
+
+## **4.1. Número de partidos jugados en España**
+
+```{r, echo = TRUE, eval = TRUE}
+
+spain <- date %>% group_by(Año) %>% count(country) %>% filter(country == "Spain")
+
+ggplot(spain, aes(x=Año, y=n)) + 
+  geom_point(size=3) + 
+  geom_segment(aes(x=Año, 
+                   xend=Año, 
+                   y=0, 
+                   yend=n)) + 
+  labs(title="Partidos jugados en España") + 
+  theme(axis.text.x = element_text(angle=90, vjust=0.6))+labs(x = "Años", y = "nº partidos")
+
+```
+
+# **5. Conclusión**
+
+<div style = "text-align: justify">Como conclusión, se puede observar que el fútbol femenino ha experimentado un gran crecimiento desde sus inicios hasta ahora, sin embargo todavía falta mucho que mejorar. Este crecimiento no solo está relacionado con los datos analizados como son el número de partidos por año de goles o de selecciones sino que cada vez hay más personas interesadas en este deporte y esto hace que gane más popularidad.</div/>
+
+<div style = "text-align: justify">Hay países como por ejemplo EEUU, Alemania o Francia donde los clubes ya destinan una cantidad considerable de dinero para esta sección del fútbol profesional haciendo también que sus selecciones mejoren y sean referentes para todo el mundo.</div/>
+
+<div style = "text-align: justify">España es el noveno país en cuanto a la inversión de los clubes y las federaciones con 4 millones de euros. Es una posición bastante buena para España que en poco tiempo ha superado a muchos otros países en este aspecto.</div/>
+
+
+# **6. Trabajos en los que  me he basado**
+
+<div style = "text-align: justify">En la página de donde he cogido los datos, hay algunos análisis con estos mismos datos que aunque no están en lenguaje r me han servido como ejemplos para algunos de los gráficos y mapas que he utilizado en este.</div/>
+
+Estos se pueden ver [aqui](https://www.kaggle.com/martj42/womens-international-football-results/notebooks)
+
+
+# **7. Bibliografia**
+
+- [enlace a la página web de la asignatura](https://perezp44.github.io/intro-ds-20-21-web/04-tutoriales.html)
+- [ejemplos de gráficos y mapas](https://www.r-graph-gallery.com/)
+- [datos del trabajo](https://www.kaggle.com/martj42/womens-international-football-results)
+- [ejemplo de análisis](https://www.kaggle.com/gcdatkin/women-s-football-win-prediction)
+- [ejemplo de análisis](https://www.kaggle.com/cmule90/eda-women-s-international-football)
+- [ejemplo de análisis](https://www.kaggle.com/arindambaruah/women-s-football-is-on-a-rise)
+
+
+# **8. Sesión Informativa**
+```{r}
+    sessioninfo::session_info() %>% details::details(summary = 'current session info')
+```
